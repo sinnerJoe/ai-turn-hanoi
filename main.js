@@ -21,23 +21,52 @@ var bars = inputObj.bars;
 var totalSteps = 0;
 var min = -1
 var max = -1
-for(var i=0; i<100; i++){
-    var coolStrat = new RandomStrategy(initialState, bars, finalState) 
-    coolStrat.execute()
 
-    var steps = coolStrat.report().stepCount
+var min_no_roll = -1
+var max_no_roll = -1
+var totalRolls = 0
+var totalRollAmount = 0
+var minSteps = []
+var tests = 10
+var start = new Date().getTime()
+for(var i=0; i<tests; i++){
+    var coolStrat = new RandomStrategy(initialState.slice(0), bars, finalState) 
+    coolStrat.execute()
+    var report = coolStrat.report()
+    var steps = report.stepCount 
     totalSteps += steps
+    
+    totalRollAmount += report.rollsAmount
+    totalRolls += report.rollsCount
+    var cleanSteps = steps - report.rollsAmount
+    if(min_no_roll == -1 || cleanSteps < min_no_roll){
+        min_no_roll = cleanSteps
+    }
+    if(max_no_roll == -1 || cleanSteps > max_no_roll){
+        max_no_roll = cleanSteps
+    }
     if(max==-1 || steps > max)
         max = steps
-    if(min == -1 || steps < min)
+    if(min == -1 || steps < min){
         min = steps
-
+        minSteps = coolStrat.report().steps
+    }
+    
 }
-var average = totalSteps / 100
-console.log("Average = " + average)
-console.log("Min = " + min)
-console.log("Max = " + max)
+var average = totalSteps / tests
+var avg_no_rolls = (totalSteps - totalRollAmount) / tests
+var avg_dead_end = totalRolls / tests
+var averageTime = (new Date().getTime() - start) / tests
+console.log("Average steps = " + average)
+console.log("Average steps (without rollbacks) = " + avg_no_rolls)
+console.log("Average dead ends = " + avg_dead_end)
 
-// fs.writeFileSync('output.json', JSON.stringify({
-//     coolStrat
-// }, null, 2))
+console.log("Min = " + min)
+console.log("Max = " + max) 
+console.log("Min (steps without rolls) = " + min_no_roll)
+console.log("Max (steps without rolls) = " + max_no_roll) 
+console.log("Average time = " + (averageTime / 1000) + " seconds") 
+
+fs.writeFileSync('output.json', JSON.stringify({
+    steps: minSteps
+}, null, 2))

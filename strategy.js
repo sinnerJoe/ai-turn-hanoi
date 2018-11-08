@@ -10,6 +10,11 @@ function getRandomPos(options) {
     return res
 }
 
+function getRandomRollback(maxRollback){
+    var r = Math.random()
+    return Math.trunc(r * maxRollback - 0.0000000001)
+}
+
 function range(min, max) {
     var res = []
     for (var i = min; i < max; i++) res.push(i)
@@ -18,16 +23,19 @@ function range(min, max) {
 
 function hash(arr, bars){
     var hash=0
+    bars++
+    
     for (var i = 0; i < arr.length; i++) {
         hash += arr[i] * Math.pow(bars, i)
     }
+
     return hash
 }
 
 class State{
-    constructor(current, bars, movable){
+    constructor(current, bars, movable, currentHash){
         this.current = current 
-        this.hash = hash(current, bars)
+        this.hash = currentHash ? currentHash : hash(current, bars)
         this.movable = movable
     }
 
@@ -40,29 +48,22 @@ class Strategy{
     
     constructor(currentState, bars, finalState){
         this.invalidGuesses = 0;
-        
         this.currentState = currentState
+        this.hypothethis = currentState.slice(0)
         this.currentHash = hash(currentState, bars)
         this.finalState = finalState
         this.bars = bars
         this.movable = currentState.length-1
-        this.previousStates = [new State(this.currentState, bars, this.movable)]
+        this.previousStates = [new State(this.currentState.slice(0), bars, this.movable, this.currentHash)]
         this.stepsCount = 0;
-        this.rollBacks = []
+        this.totalRollback = 0
+        this.rollbackCount = 0
     }
 
 
     run(){}
 
     execute(){
-        // var key = setInterval(()=>{
-        //     this.run()
-        //     if(this.isDone()){
-
-        //         clearInterval(key)
-        //         console.log("DONE")
-        //     }
-        // }, 0)
 
         do{
             this.run()
@@ -72,41 +73,49 @@ class Strategy{
     }
 
     rollBack(steps){
+        this.totalRollback += steps
+        this.rollbackCount ++
         steps = steps < this.previousStates.length? steps : this.previousStates.length - 1
         var fallBack = this.previousStates.length - 1 - steps;
-        // console.log("Fallback: " + fallBack)
+        console.log("Fallback: " + fallBack)
         this.currentState = this.previousStates[fallBack].current
+        this.movable = this.previousStates[fallBack].movable
         this.invalidGuesses = 0;
-        this.previousStates = this.previousStates.slice(0, fallBack)
+        // this.previousStates = this.previousStates.slice(0, fallBack)
+        this.previousStates = this.previousStates.splice(fallBack+1, steps)
         // console.log("Fallback to " + this.currentState)
     }
 
     move(fromIndex, to){
         this.hypothethis = this.currentState.slice(0)
+        // this.hypothethis.forEach((v, i)=>{
+        //     this.hypothethis[i] = this.currentState[i]
+        // })
         this.hypothethis[fromIndex] = to;
+        // this.hypothethis = this.currentState
         this.hypoteticHash = hash(this.hypothethis)
         var valid = this.validate(fromIndex, to);
         if(valid){
+
             this.stepsCount ++
+            this.invalidGuesses = 0;
             // console.log(`old state = ${this.currentState} -> ${this.hypothethis}`)
             this.currentState = this.hypothethis
             this.checkFreeze()
-            this.previousStates.push(new State(this.currentState,  this.bars, this.movable))
+            this.previousStates.push(new State(this.currentState,  this.bars, this.movable, this.hypoteticHash))
+            
             // console.log(`${this.currentState} curr[${fromIndex}] -> ${to}`)
         } 
-        // else if(this.invalidGuesses == this.bars*3){
-        //     var i = 0;
+        else if(this.invalidGuesses == 20){
             
-        //     while (i < this.previousStates.length && this.previousStates[this.previousStates.length-i-1].movable == this.movable ){
-                
-        //         i++;
-        //         console.log("rollback " + i)
-        //     }
-        //     this.rollBack(i)
-        // }
+            this.invalidGuesses = 0
+            var rollDistance = getRandomRollback(Math.min(this.previousStates.length, 300))
+            this.rollBack(rollDistance)
+        }
         else{
             this.invalidGuesses++;
         }
+
         return valid;
         
     }
@@ -123,24 +132,24 @@ class Strategy{
 
         // console.log("fromIndex = " + this.fromIndex)
         
-        for(var prevState of this.previousStates)
-            if(this.hypoteticHash == prevState.hash)
-                return false;
-        // console.log("after prev states")
-
-        // console.log("reach for")
         for(var i=0; i<fromIndex; i++){
             if(this.currentState[i] == this.currentState[fromIndex] || to == this.currentState[i])
                 return false
         }
+        for(var prevState of this.previousStates)
+            // if(this.hypoteticHash == prevState.hash)
+            //     return false;
+            if(this.currentStateEquals(prevState.current))
                 
         return true;
     }
 
-    equalLists(list1, list2){
-        for(var i in list1) 
-            if(list1[i] != list2[i]) return false;
-        return true;
+    currentStateEquals(arr){
+        for(var i in arr){
+            if(this.currentState[i] != arr[i])
+                return false
+        }
+        return true
     }
 
     isDone(){
@@ -156,8 +165,10 @@ class Strategy{
 
     report(){
         return{
-            stepCount: this.previousStates.length,
-                // steps: coolStrat.previousStates.map((state) => state.current)
+            stepCount: this.previousStates.length ,
+            steps: this.previousStates.map((state) => state.current),
+            rollsCount: this.rollbackCount,
+            rollsAmount: this.totalRollback  
         }
     }
 }
@@ -187,10 +198,10 @@ class RandomStrategy extends Strategy{
             if(moveResult) break;
         }
         // console.log("loop end")
-        
-        // if(iterations > 100){
-        //     fs.writeFileSync('output.json', JSON.stringify(this.previousStates))
-        // }
+        iterations++;
+        if(iterations == 20){
+            fs.writeFileSync('output2.json', JSON.stringify(this.previousStates))
+        }
         
     }
 }
