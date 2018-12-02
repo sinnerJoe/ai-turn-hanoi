@@ -13,6 +13,8 @@ var inputObj = JSON.parse(input)
 
 
 
+
+
 var initialState = inputObj.initialState
 var finalState = inputObj.finalState
 var bars = inputObj.bars;
@@ -54,11 +56,11 @@ for(var i=0; i<tests; i++){
     
 }
 var average = totalSteps / tests
-var avg_no_rolls = (totalSteps - totalRollAmount) / tests
+var avg_with_rolls = (totalSteps + totalRollAmount) / tests
 var avg_dead_end = totalRolls / tests
 var averageTime = (new Date().getTime() - start) / tests
 console.log("Average steps = " + average)
-console.log("Average steps (without rollbacks) = " + avg_no_rolls)
+console.log("Average steps (with rollbacks) = " + avg_with_rolls)
 console.log("Average dead ends = " + avg_dead_end)
 
 console.log("Min = " + min)

@@ -1,0 +1,14 @@
+{
+  "name": "turn-hanoi2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ramda": "^0.26.0"
+  }
+}
