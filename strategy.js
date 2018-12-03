@@ -366,8 +366,42 @@ class BFSStrategy extends RandomStrategy{
     }
 }
 
-class HillClimbingStrategy extends BFSStrategy {
-    constructor()
+class HillClimbingStrategy extends Strategy {
+
+    constructor(currentState, bars, finalState){
+        super(currentState, bars, finalState)
+        this.previousStates = [this.currentState]
+    }
+
+    run() {
+        var moves = this.generateMoves(this.currentState);
+        var fitnessList = moves.map((move) => this.calculateFitness(move))
+        fitnessList = R.filter((v) => v != 0, fitnessList)
+
+        if(R.all(R.equals(1), fitnessList)){
+            this.currentState = getRandomOption(moves)
+            this.previousStates.push(this.currentState);
+            return;
+        }
+
+
+    }
+
+    calculateFitness(state){
+
+        if(this.existedBefore(state))
+            return 0;
+
+        return 1 //default fitness
+    }
+
+
 }
 
-module.exports = { RandomStrategy: RandomStrategy, State: State, getRandomWeightedOption: getRandomWeightedOption, BFSStrategy: BFSStrategy}
+module.exports = { 
+    RandomStrategy: RandomStrategy,
+    State: State,
+    getRandomWeightedOption: getRandomWeightedOption,
+    BFSStrategy: BFSStrategy, 
+    HillClimbingStrategy: HillClimbingStrategy
+}
