@@ -171,6 +171,15 @@ class Strategy{
 
     }
 
+    existedBefore(state) {
+        for (let i = this.previousStates.length - 1; i >= 0; i--) {
+            if (state.equals(this.previousStates[i])) {
+                return true
+            }
+        }
+        return false
+    }
+
     generateMoves(state) {
         const upperDiscs = R.repeat(-1, this.bars)
         for (var i = 0; i < state.movable; i++) {
@@ -216,14 +225,7 @@ class RandomStrategy extends Strategy{
         this.rollsCount = 0
     }
 
-    existedBefore(state){
-        for (let i = this.previousStates.length-1; i>=0; i--) {
-            if (state.equals(this.previousStates[i])) {
-                return true
-            }
-        }
-        return false
-    }
+
 
     validate(option){
         if (this.currentState.equals(option) || this.existedBefore(option))
@@ -288,18 +290,8 @@ class RandomStrategy extends Strategy{
     }
 
     run(){
-        // console.log("Current state: " + this.currentState.state)
-        // console.log(this.currentState.state + " " + this.previousStates.length)
-        // if(!this.afterRollback)
             this.generateMoves(this.currentState)
-           
-        // else{
-        //     this.generateMoves(this.currentState)
-        //     this.afterRollback = false
-        // }
-        // console.log("Children: ");
-        // console.log(this.currentState.children)
-        // console.log("RANDOMIZING CHOICE")
+
         do{
             if (!this.currentState.hasChildren()){
                 this.smartRollback()
@@ -373,4 +365,9 @@ class BFSStrategy extends RandomStrategy{
         }
     }
 }
+
+class HillClimbingStrategy extends BFSStrategy {
+    constructor()
+}
+
 module.exports = { RandomStrategy: RandomStrategy, State: State, getRandomWeightedOption: getRandomWeightedOption, BFSStrategy: BFSStrategy}

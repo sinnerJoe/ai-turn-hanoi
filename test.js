@@ -1,7 +1,7 @@
 var strat = require('./strategy')
 var R = require('ramda')
 var fs = require('fs')
-var discs = 11
+var discs = 4
 var start = R.repeat(0, discs)
 var end = R.repeat(1, discs)
 var bars = 3
