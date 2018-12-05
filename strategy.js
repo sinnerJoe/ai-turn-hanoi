@@ -175,7 +175,7 @@ class Strategy{
         for (let i = this.previousStates.length - 1; i >= 0; i--) {
             if (state.equals(this.previousStates[i])) {
                 return true
-            }
+            } 
         }
         return false
     }
@@ -310,7 +310,7 @@ class RandomStrategy extends Strategy{
     }
 }
 
-class BFSStrategy extends RandomStrategy{
+class BFSStrategy extends Strategy{
     constructor(currentState, bars, finalState) {
         super(currentState, bars, finalState)
         this.potentialMoves = this.generateMoves(this.currentState);
@@ -318,37 +318,45 @@ class BFSStrategy extends RandomStrategy{
         this.previousStates = [this.currentState, ...this.potentialMoves]
         this.minMovable = this.currentState.movable
     }
+    existedBefore(state) {
+        for (let i = this.previousStates.length - 1; i >= 0; i--) {
+            if (state.hash() === this.previousStates[i]) {
+                return true
+            }
+        }
+        return false
+    }
+    generateMovesClean(state) {
+        var children = this.generateMoves(state)
+        delete state.children
+        return children
+    }
 
     isDone(){
         this.currentState = this.potentialMoves.find((move) => move.movable == -1);
         if (this.currentState) return true;
-        this.currentState = this.potentialMoves.some(move => move.equals(this.finalState))
-        if (this.currentState) return true;
+        // this.currentState = this.potentialMoves.some(move => move.equals(this.finalState))
+        // if (this.currentState) return true;
     }
 
     run(){
-        console.log("RUN " + this.potentialMoves.length)
+        // console.log(this.potentialMoves.length)
         let nextMoves = []
         for(let parent of this.potentialMoves){
-            let children = this.generateMoves(parent).filter((child) => !this.existedBefore(child))
+            let children = this.generateMovesClean(parent).filter((child) => !this.existedBefore(child))
 
             for(let child of children)
                 if(this.minMovable > child.movable){
                     this.minMovable = child.movable
                     this.potentialMoves = [child]
-                    this.previousStates = [child]
+                    this.previousStates = [child.hash()]
                     console.log("SHORTCUT")
                     return
                 }
-
-            parent.children = children
-            this.previousStates = this.previousStates.concat(...children)
+            this.previousStates = this.previousStates.concat(...children.map((c)=>c.hash()))
             nextMoves = nextMoves.concat(...children)
         }
-        // console.log(nextMoves)
         this.potentialMoves = nextMoves
-        // console.log(this.potentialMoves.map(m => m.state))
-        // console.log(this.potentialMoves.length)
     }
 
     report(){
@@ -366,42 +374,167 @@ class BFSStrategy extends RandomStrategy{
     }
 }
 
+
+class IDDFSStrategy extends BFSStrategy {
+    constructor(){
+        super(...arguments);
+        this.foundFinalState = false
+    }
+
+    run() {
+        // console.log(this.potentialMoves.map(move=> {return {state: move.state, moveable: move.moveable}}))
+        // console.log(this.potentialMoves.map(v => { return { state: v.state, movable: v.movable } }))
+        console.log(this.potentialMoves.length)
+        const traversed = R.flatten(R.map((move) => this.deepSearch(move, 1), this.potentialMoves))
+
+        const betterNodes = R.filter((node) => node.obj.movable < this.minMovable, traversed)
+
+        if(betterNodes.length > 0){
+            const feval = (node) => node.obj.movable * 10 + node.inverseDepth
+            let bestNode = betterNodes[0]
+            // console.log(bestNode.obj.state)
+            let bestVal = feval(bestNode)
+            // console.log("after bestval")
+            for (let i = 1; i< betterNodes.length; i++){
+                const nodeVal = feval(betterNodes[i])
+                // console.log("in loop " + i)
+                if(nodeVal > bestVal){
+                    bestNode = betterNodes[i]
+                    bestVal = nodeVal
+                }
+            }
+            bestNode = bestNode.obj
+            this.minMovable = bestNode.minMovable
+            this.potentialMoves = [bestNode]
+            this.previousStates = []
+
+            return;
+        }
+
+        this.potentialMoves = R.filter((node) => node.inverseDepth == 0, traversed).map((v)=>v.obj)
+       
+    }
+
+
+
+    deepSearch(root, steps){
+        this.previousStates.push(root.hash())
+        var currentNode = [{ obj: root, inverseDepth: steps }]
+        if(steps == 0 || this.foundFinalState){
+            if(root.movable == -1){
+                this.foundFinalState = true
+                // console.log("FOUND MOVABLE")
+            }
+            return currentNode
+        }
+        const children = this.generateMovesClean(root)
+
+        const traversed = R.map((child)=> this.deepSearch(child, steps-1), children)
+        traversed.push(currentNode)
+        // console.log(traversed.map(v => v.obj.state))
+        return R.flatten(traversed)
+
+    }
+}
+
 class HillClimbingStrategy extends Strategy {
 
     constructor(currentState, bars, finalState){
         super(currentState, bars, finalState)
         this.previousStates = [this.currentState]
+        this.failed = false;
     }
 
     run() {
         var moves = this.generateMoves(this.currentState);
-        var fitnessList = moves.map((move) => this.calculateFitness(move))
-        fitnessList = R.filter((v) => v != 0, fitnessList)
+        delete this.currentState.children
+        var fitnessList = moves.map((move) => this.calculateFitness(move))        
+        for (var i=0; i<fitnessList.length; i++)
+            if (fitnessList[i] == -1){
+                fitnessList.splice(i, 1);
+                moves.splice(i,1)
+                i--;
+            }
 
-        if(R.all(R.equals(1), fitnessList)){
-            this.currentState = getRandomOption(moves)
+        if(fitnessList.length == 0)
+            this.failed = true
+        else{
+            if(R.all(R.equals(fitnessList[0]), fitnessList)){
+                // console.log("randoming")
+                // console.log(fitnessList)
+                this.currentState = getRandomOption(moves)
+            }
+            else{
+                // console.log("USING MAX FITNESS")
+                var maxIndex = 0;
+                var maxFitness = fitnessList[0]
+                for (let i = 1; i<fitnessList.length; i++){
+                    if(fitnessList[i] > maxFitness){
+                        maxFitness = fitnessList[i]
+                        maxIndex = i
+                    }
+                }
+                this.currentState = moves[maxIndex]
+            }
+
             this.previousStates.push(this.currentState);
-            return;
         }
 
+    }
 
+    discsOverSource(state){
+        const sourceBar = state.state[state.movable-1]
+        let discsOver = 0
+        for(let i =0; i<state.movable-1; i++)
+            if(state.state[i] == sourceBar) 
+                discsOver++;
+        return discsOver
+    }
+    discsOnTarget(state){
+        const targetBar = this.finalState.state[state.movable-1]
+        let discs = 0
+        for(let i =0; i<state.movable-1; i++)
+            if(state.state[i] == targetBar) 
+                discs++;
+        return discs
     }
 
     calculateFitness(state){
 
         if(this.existedBefore(state))
-            return 0;
+            return -1;
+        const onTarget = this.discsOnTarget(state)
+        const overSource = this.discsOverSource(state) 
+        if(onTarget + overSource > 0)
+            return 1 / (onTarget + overSource * (1 + 1/this.bars))  //default fitness
+        return 1
+    }
 
-        return 1 //default fitness
+    isDone() {
+        // console.log(this.currentState.state)
+        if (this.currentState.movable == -1 || this.failed) return true
+        return this.currentState.equals(this.finalState)
+    }
+
+
+    report(){
+        return {
+            steps: this.previousStates,
+            failed: this.failed,
+            stepsCount: this.previousStates.length
+        }
     }
 
 
 }
+
+
 
 module.exports = { 
     RandomStrategy: RandomStrategy,
     State: State,
     getRandomWeightedOption: getRandomWeightedOption,
     BFSStrategy: BFSStrategy, 
-    HillClimbingStrategy: HillClimbingStrategy
+    HillClimbingStrategy: HillClimbingStrategy,
+    IDDFSStrategy: IDDFSStrategy
 }
