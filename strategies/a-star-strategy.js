@@ -14,10 +14,11 @@ class AStarStrategy extends HillClimbingStrategy {
         this.constructedPath = []
         this.totalCreatedNodes = 0;
         this.currentState = this.registerOrGetExisting(this.currentState)
-        this.currentState.goalDistance = 0;
-        this.currentState.reachCost = 0
-        this.visitNeighbors(currentState)
-        this.currentState.goalDistance = Infinity
+        this.resetNode(this.currentState)
+        // this.currentState.goalDistance = 0;
+        // this.currentState.reachCost = 0
+        // this.visitNeighbors(currentState)
+        // this.currentState.goalDistance = Infinity
     }
 
     calculateInverseFitness(state) {
@@ -25,7 +26,7 @@ class AStarStrategy extends HillClimbingStrategy {
         const overSource = this.discsOverSource(state)
         if (onTarget + overSource > 0)
             return 1000 - 1000 / (onTarget + overSource * (1 + 1 / this.bars))  
-        return 0 //default fitness
+        return 0.1   //default fitness
     }
 
     registerOrGetExisting(node){
@@ -51,7 +52,7 @@ class AStarStrategy extends HillClimbingStrategy {
     visitNeighbors(node) {
         console.log("___________________")
         console.log(node.state)
-        console.log(this.stepEnd)
+        // console.log(this.stepEnd)
         console.log("___________________")
         const upperDiscs = R.repeat(-1, this.bars)
         for (var i = 0; i < node.movable; i++) {
@@ -176,7 +177,7 @@ class AStarStrategy extends HillClimbingStrategy {
             // if(this.stepEnd.movable == 1)
             //     this.constructedPath.push(pathNode)
             this.currentState = stepEnd
-            // this.resetNode(this.currentState)
+            this.resetNode(this.currentState)
             this.stepEnd = null
 
         }
@@ -190,11 +191,18 @@ class AStarStrategy extends HillClimbingStrategy {
         collection[node.hash] = node
         this.previousStates = collection
         this.unvisitedNodes = {}
+        console.log("before visit")
         this.minMovable -= 3
+        // console.log(node)
         let neighbors = this.visitNeighbors(node)
-        this.minMovable -= 3
-        for (let k of Object.keys(neighbors))
+        this.minMovable += 3
+        console.log("after visit")
+        console.log(neighbors)
+        for (let k of Object.keys(neighbors)){
+
+            console.log(neighbors[k].state)
             neighbors[k].neighbors[node.hash]= node
+        }
         node.reachCost = Infinity
     }
 
