@@ -66,7 +66,11 @@ class State {
     }
 
     hasChildren() {
-        return this.children.length > 0
+        return this.children && this.children.length > 0
+    }
+
+    hadChildren(){
+        return !this.children
     }
 
     // equals(otherState){

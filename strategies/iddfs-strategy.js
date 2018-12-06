@@ -17,7 +17,7 @@ class IDDFSStrategy extends BFSStrategy {
         // console.log(this.potentialMoves.length)
         if(this.potentialMoves.length)
         // console.log("RUN")
-        this.potentialMoves = this.deepSearch(this.potentialMoves, 10)
+        this.potentialMoves = this.deepSearch(this.potentialMoves, 10 < this.minMovable? 10 : this.minMovable)
 
 
         // console.log("POTENTIAL MOVES:" )

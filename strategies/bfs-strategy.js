@@ -11,19 +11,8 @@ class BFSStrategy extends Strategy {
         this.previousStates = [this.currentState, ...this.potentialMoves]
         this.minMovable = this.currentState.movable
     }
-    existedBefore(state) {
-        for (let i = this.previousStates.length - 1; i >= 0; i--) {
-            if (state.hash() === this.previousStates[i]) {
-                return true
-            }
-        }
-        return false
-    }
-    generateMovesClean(state) {
-        var children = this.generateMoves(state)
-        delete state.children
-        return children
-    }
+   
+    
 
     isDone() {
         this.currentState = this.potentialMoves.find((move) => move.movable == -1);
@@ -37,6 +26,7 @@ class BFSStrategy extends Strategy {
         let nextMoves = []
         for (let parent of this.potentialMoves) {
             const children = this.generateMovesClean(parent).filter((child) => !this.existedBefore(child))
+            this.totalStates += children.length
             const bestChild = R.find((child) => child.movable < this.minMovable, children)
             if(bestChild){
                     this.minMovable = bestChild.movable
@@ -51,30 +41,30 @@ class BFSStrategy extends Strategy {
         this.potentialMoves = nextMoves
     }
 
-    run2(){
-        var newStack = []
-        do{
+    // run2(){
+    //     var newStack = []
+    //     do{
 
-            const state = this.potentialMoves.pop()
-            const children = this.generateMovesClean(state).filter((child)=>!this.existedBefore(child))
+    //         const state = this.potentialMoves.pop()
+    //         const children = this.generateMovesClean(state).filter((child)=>!this.existedBefore(child))
 
-            const bestChild = R.find((child) => child.movable < this.minMovable, children)
-            if(bestChild){ 
-                this.minMovable = bestChild.movable
-                this.previousStates = [bestChild.hash()]
-                return [bestChild]
-            }
+    //         const bestChild = R.find((child) => child.movable < this.minMovable, children)
+    //         if(bestChild){ 
+    //             this.minMovable = bestChild.movable
+    //             this.previousStates = [bestChild.hash()]
+    //             return [bestChild]
+    //         }
 
-            this.previousStates = R.concat(this.previousStates, children.map((c)=>c.hash()))
-            newStack = R.concat(newStack, children)
-        }while(this.potentialMoves.length > 0);
-        this.potentialMoves = newStack
+    //         this.previousStates = R.concat(this.previousStates, children.map((c)=>c.hash()))
+    //         newStack = R.concat(newStack, children)
+    //     }while(this.potentialMoves.length > 0);
+    //     this.potentialMoves = newStack
 
-    }
+    // }
 
     report() {
+        let path = []
         let state = this.currentState
-        let path = [state]
         console.log("A STATE" + state.parent)
         while (state.parent !== null) {
             state = state.parent
@@ -82,7 +72,8 @@ class BFSStrategy extends Strategy {
         }
         return {
             stepCount: path.length,
-            steps: path
+            steps: path,
+            totalStates: this.totalStates
         }
     }
 }

@@ -1,6 +1,6 @@
 var fs = require('fs')
 var process =require('process')
-var RandomStrategy =  require('./strategy').RandomStrategy
+var RandomStrategy =  require('./strategies/random-strategy')
 
 if(process.argv.length < 3) {
     console.log("no input file path")   

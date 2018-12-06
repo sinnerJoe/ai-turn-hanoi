@@ -13,9 +13,9 @@ class HillClimbingStrategy extends Strategy {
         this.failed = false;
     }
 
+
     run() {
-        var moves = this.generateMoves(this.currentState);
-        delete this.currentState.children
+        var moves = this.generateMovesClean(this.currentState);
         var fitnessList = moves.map((move) => this.calculateFitness(move))
         for (var i = 0; i < fitnessList.length; i++)
             if (fitnessList[i] == -1) {
@@ -23,6 +23,7 @@ class HillClimbingStrategy extends Strategy {
                 moves.splice(i, 1)
                 i--;
             }
+        this.totalStates += fitnessList.length
 
         if (fitnessList.length == 0)
             this.failed = true
@@ -45,7 +46,7 @@ class HillClimbingStrategy extends Strategy {
                 this.currentState = moves[maxIndex]
             }
 
-            this.previousStates.push(this.currentState);
+            this.previousStates.push(this.currentState.hash());
         }
 
     }
@@ -74,6 +75,7 @@ class HillClimbingStrategy extends Strategy {
         const onTarget = this.discsOnTarget(state)
         const overSource = this.discsOverSource(state)
         if (onTarget + overSource > 0)
+            // return 1 / (onTarget + overSource * (1.0001))  //default fitness
             return 1 / (onTarget + overSource * (1 + 1 / this.bars))  //default fitness
         return 1
     }
@@ -86,10 +88,13 @@ class HillClimbingStrategy extends Strategy {
 
 
     report() {
+        
         return {
-            steps: this.previousStates,
+            // steps: this.previousStates,
+            steps: this.constructPath(this.currentState),
             failed: this.failed,
-            stepsCount: this.previousStates.length
+            stepsCount: this.previousStates.length,
+            totalStates: this.totalStates
         }
     }
 

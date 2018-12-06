@@ -2,10 +2,11 @@ const RandomStrategy = require('./strategies/random-strategy')
 const BFSStrategy = require('./strategies/bfs-strategy')
 const IDDFSStrategy  = require('./strategies/iddfs-strategy')
 const HillClimbingStrategy = require('./strategies/hill-climbing-strategy')
+const AStarStrategy = require("./strategies/a-star-strategy")
 const {getRandomWeightedOption, State} = require('./strategies/util')
 const R = require('ramda')
 var fs = require('fs')
-var discs = 11
+var discs = 6
 var start = R.repeat(0, discs)
 var end = R.repeat(1, discs)
 var bars = 3
@@ -92,6 +93,7 @@ function test5(){
     console.log("Time elapsed: " + secs)
     const report = strategy.report()
     console.log(report.stepCount)
+    console.log("total states: " + report.totalStates)
     console.log(report.steps.map(step => step.state))
     // console.log(report.steps);
 }
@@ -103,9 +105,12 @@ function test6(){
     console.log("Time elapsed: " + secs)
     const report = strategy.report()
     console.log("Steps: " + report.stepsCount)
+    console.log("total states: " + report.totalStates)
     console.log("Failed " + report.failed)
+    
     console.log(report.steps.map(step => step.state))
 }
+
 function test7(){
     console.log("________________TEST 7______________________")
     var strategy = new IDDFSStrategy (start, bars, end)
@@ -117,10 +122,23 @@ function test7(){
     // console.log(report.steps);
 }
 
+function test8(){
+    console.log("________________TEST 8______________________")
+    var strategy = new AStarStrategy(start, bars, end)
+    const secs = measureTime(() => strategy.execute())
+    console.log("Time elapsed: " + secs)
+    const report = strategy.report()
+    console.log(report.stepCount)
+    // console.log("total states: " + report.totalStates)
+    console.log(report.steps.map(step => step.state))
+    // console.log(report.steps);
+}
+
 // test1()
 // test2()
 // test3()
 // test4()
-test5();
+// test5();
 // test6()
 // test7()
+test8();

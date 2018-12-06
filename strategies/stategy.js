@@ -8,9 +8,25 @@ class Strategy {
         this.currentState = new State(currentState, currentState.length, bars)
         this.finalState = new State(finalState, currentState.length, bars)
         this.bars = bars
+        this.totalStates = 0
         // this.stepsCount = 0;
         // this.totalRollback = 0
         // this.rollbackCount = 0
+    }
+
+    constructPath(state){
+        var path = []
+        while(state.parent){
+            path.push(state)
+            state = state.parent
+        }
+        return path
+    }
+
+    generateMovesClean(state) {
+        var children = this.generateMoves(state)
+        delete state.children
+        return children
     }
 
 
@@ -44,13 +60,17 @@ class Strategy {
     }
 
     report() {
-        var steps = this.previousStates.map((state) => state.state)
-        steps.push(this.currentState.state)
+        let path = []
+        console.log("A STATE" + this.currentState.parent)
+        let state = this.currentState
+        while (state.parent) {
+            state = state.parent
+            path.push(state.state)
+        }
         return {
-            stepCount: this.previousStates.length,
-            steps: steps,
-            rollsCount: this.rollbackCount,
-            rollsAmount: this.totalRollback
+            stepCount: path.length,
+            steps: path,
+            totalStates: this.totalStates
         }
     }
 
@@ -64,9 +84,18 @@ class Strategy {
 
     }
 
+    // existedBefore(state) {
+    //     for (let i = this.previousStates.length - 1; i >= 0; i--) {
+    //         if (state.equals(this.previousStates[i])) {
+    //             return true
+    //         }
+    //     }
+    //     return false
+    // }
+
     existedBefore(state) {
         for (let i = this.previousStates.length - 1; i >= 0; i--) {
-            if (state.equals(this.previousStates[i])) {
+            if (state.hash() === this.previousStates[i]) {
                 return true
             }
         }
@@ -74,6 +103,7 @@ class Strategy {
     }
 
     generateMoves(state) {
+        
         const upperDiscs = R.repeat(-1, this.bars)
         for (var i = 0; i < state.movable; i++) {
             var bar = state.state[i]
@@ -93,12 +123,14 @@ class Strategy {
                         // console.log(arrState)
                         const movable = this.countMovable(arrState, state.movable)
                         const child = new State(arrState, movable)
+
                         if (child.movable < state.movable) {
                             state.children = [child]
                             child.setParent(state)
                             return state.children
                         }
                         state.addChild(child)
+
                     }
                 }
         }
